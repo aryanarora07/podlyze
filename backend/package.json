@@ -1,0 +1,26 @@
+{
+  "name": "podcast-summarizer-backend",
+  "version": "1.0.0",
+  "description": "Backend for PodSum podcast summarizer",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "dev": "nodemon index.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@google-cloud/speech": "^5.1.0",
+    "@prisma/client": "^5.19.1",
+    "cors": "^2.8.5",
+    "express": "^4.17.1",
+    "googleapis": "^92.0.0",
+    "openai": "^3.2.1",
+    "prisma": "^5.19.1",
+    "ytdl-core": "^4.11.2"
+  },
+  "devDependencies": {
+    "nodemon": "^2.0.15"
+  }
+}
