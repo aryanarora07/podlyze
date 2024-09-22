@@ -1,7 +1,7 @@
 'use client'
 
-import { PodcastSummarizerLanding } from "@/components/podcast-summarizer-landing";
+import { LandingPage } from "@/components/landingpage";
 
 export default function Home() {
-    return <PodcastSummarizerLanding />;
+    return <LandingPage />;
 }
