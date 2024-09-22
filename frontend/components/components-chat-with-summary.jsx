@@ -95,7 +95,7 @@ export function ChatWithSummary2() {
           <div className="flex justify-between items-center py-4">
             <Link href="/" className="flex items-center">
               <Headphones className="h-8 w-8 text-purple-600" />
-              <span className="ml-2 text-2xl font-bold text-purple-800">PodSum</span>
+              <span className="ml-2 text-2xl font-bold text-purple-800">Podlyze</span>
             </Link>
             <nav className="hidden md:flex space-x-10">
               <Link
@@ -172,7 +172,7 @@ export function ChatWithSummary2() {
       <footer className="bg-white shadow-md mt-8">
         <div className="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
           <p className="text-center text-gray-500 text-sm">
-            © 2023 PodSum. All rights reserved.
+            © 2024 Podlyze. All rights reserved.
           </p>
         </div>
       </footer>

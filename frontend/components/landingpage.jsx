@@ -12,7 +12,7 @@ export function LandingPage() {
         className="px-4 lg:px-6 h-16 flex items-center border-b border-purple-100">
         <Link className="flex items-center justify-center" href="/">
           <Headphones className="h-6 w-6 text-purple-600" />
-          <span className="ml-2 text-2xl font-bold text-purple-800">PodSum</span>
+          <span className="ml-2 text-2xl font-bold text-purple-800">Podlyze</span>
         </Link>
         <nav className="ml-auto flex gap-4 sm:gap-6">
           <Link
@@ -55,7 +55,7 @@ export function LandingPage() {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.5, delay: 0.2 }}
                 className="mx-auto max-w-[700px] text-gray-600 md:text-xl">
-                Turn hours of podcast content into concise summaries. Save time and stay informed with PodSum.
+                Turn hours of podcast content into concise summaries. Save time and stay informed with Podlyze.
               </motion.p>
               <motion.div
                 initial={{ opacity: 0, y: 50 }}
@@ -75,7 +75,7 @@ export function LandingPage() {
           <div className="container px-4 md:px-6 mx-auto">
             <h2
               className="text-3xl font-bold tracking-tighter sm:text-5xl text-center mb-12 text-purple-800">
-              Why Choose PodSum?
+              Why Choose Podlyze?
             </h2>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
               <FeatureCard
@@ -115,7 +115,7 @@ export function LandingPage() {
               </h2>
               <p
                 className="max-w-[600px] text-gray-700 md:text-xl/relaxed lg:text-base/relaxed xl:text-xl/relaxed">
-                Join thousands of users who are maximizing their podcast consumption with PodSum.
+                Join thousands of users who are maximizing their podcast consumption with Podlyze.
               </p>
               <Link href="/auth">
                 <Button
@@ -129,7 +129,7 @@ export function LandingPage() {
       </main>
       <footer
         className="bg-white flex flex-col gap-2 sm:flex-row py-6 w-full shrink-0 items-center px-4 md:px-6 border-t border-purple-100">
-        <p className="text-xs text-gray-600">© 2024 PodSum. All rights reserved.</p>
+        <p className="text-xs text-gray-600">© 2024 Podlyze. All rights reserved.</p>
         <nav className="sm:ml-auto flex gap-4 sm:gap-6">
           <Link
             className="text-xs hover:underline underline-offset-4 text-gray-600"

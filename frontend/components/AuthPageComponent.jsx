@@ -84,7 +84,7 @@ export function AuthPageComponent() {
         <CardHeader className="space-y-1">
           <div className="flex items-center justify-center space-x-2">
             <Headphones className="h-6 w-6 text-purple-600" />
-            <CardTitle className="text-2xl font-bold text-center text-purple-800">PodSum</CardTitle>
+            <CardTitle className="text-2xl font-bold text-center text-purple-800">Podlyze</CardTitle>
           </div>
           <CardDescription className="text-center">Sign up or sign in to summarize your favorite podcasts</CardDescription>
         </CardHeader>

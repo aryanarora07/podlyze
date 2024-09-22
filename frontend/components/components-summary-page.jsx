@@ -114,7 +114,7 @@ export function SummaryPage() {
             <div className="flex justify-start lg:w-0 lg:flex-1">
               <Link href="/" className="flex items-center">
                 <Headphones className="h-8 w-8 text-purple-600" />
-                <span className="ml-2 text-2xl font-bold text-purple-800">PodSum</span>
+                <span className="ml-2 text-2xl font-bold text-purple-800">Podlyze</span>
               </Link>
             </div>
             <nav className="hidden md:flex space-x-10">
@@ -236,7 +236,7 @@ export function SummaryPage() {
             </div>
           </nav>
           <p className="mt-8 text-center text-base text-gray-400">
-            &copy; 2023 PodSum, Inc. All rights reserved.
+            &copy; 2024 Podlyze, Inc. All rights reserved.
           </p>
         </div>
       </footer>
