@@ -1,11 +1,34 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Headphones, ArrowRight, MessageSquare } from 'lucide-react'
+import { Progress } from "@/components/ui/progress"
+import { Headphones, MessageSquare, Languages } from 'lucide-react';
+import { useRouter } from 'next/navigation'
+
+const WittyProgressBar = ({ progress }) => {
+  const messages = [
+    { threshold: 0, message: "Warming up our AI..." },
+    { threshold: 20, message: "Decoding audio waves into text..." },
+    { threshold: 40, message: "Analyzing content with our AI..." },
+    { threshold: 60, message: "Don't stare at me bruh" },
+    { threshold: 80, message: "Polishing the summary..." },
+    { threshold: 100, message: "Ready to blow your mind!" },
+  ]
+
+  const currentMessage = messages.reduce((acc, { threshold, message }) => 
+    progress >= threshold ? message : acc, messages[0].message)
+
+  return (
+    <div className="w-full space-y-4">
+      <Progress value={progress} className="w-full h-4" />
+      <p className="text-lg text-purple-600 text-center font-semibold">{progress}%: {currentMessage}</p>
+    </div>
+  );
+}
 
 export function SummaryPage() {
   const searchParams = useSearchParams()
@@ -13,15 +36,35 @@ export function SummaryPage() {
   const [url, setUrl] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState('')
+  const [progress, setProgress] = useState(0)
+  const router = useRouter()
+
+  useEffect(() => {
+    let intervalId;
+    if (isLoading) {
+      intervalId = setInterval(() => {
+        fetch('http://localhost:3001/progress')
+          .then(response => response.json())
+          .then(data => {
+            setProgress(data.progress);
+            if (data.progress >= 100) {
+              clearInterval(intervalId);
+            }
+          })
+          .catch(error => console.error('Error fetching progress:', error));
+      }, 1000);
+    }
+    return () => clearInterval(intervalId);
+  }, [isLoading]);
 
   const handleSubmit = async (e) => {
     e.preventDefault()
     setIsLoading(true)
     setError('')
+    setProgress(0)
 
     try {
-      // This is a placeholder for the actual API call
-      const response = await fetch('/api/summarize', {
+      const response = await fetch('http://localhost:3001/summarize', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -34,18 +77,32 @@ export function SummaryPage() {
       }
 
       const data = await response.json()
-      // Redirect to the same page with new query params
       window.location.href = `/summary?summary=${encodeURIComponent(data.summary)}`
     } catch (err) {
       setError('Failed to summarize podcast. Please try again.')
     } finally {
       setIsLoading(false)
+      setProgress(0)
     }
   }
 
   const handleChatWithSummary = () => {
-    // Placeholder function for chat functionality
-    console.log('Chat with summary clicked')
+    if (summary) {
+      const encodedSummary = encodeURIComponent(summary);
+      console.log('Encoded summary:', encodedSummary); // Add this line for debugging
+      router.push(`/chat?summary=${encodedSummary}`);
+    } else {
+      console.error('No summary available');
+    }
+  }
+
+  const handleTranslate = () => {
+    if (summary) {
+      const encodedSummary = encodeURIComponent(summary);
+      router.push(`/translate?summary=${encodedSummary}`);
+    } else {
+      console.error('No summary available');
+    }
   }
 
   return (
@@ -77,7 +134,6 @@ export function SummaryPage() {
                 Pricing
               </Link>
             </nav>
-            
           </div>
         </div>
       </header>
@@ -101,6 +157,12 @@ export function SummaryPage() {
                 <MessageSquare className="mr-2 h-4 w-4" />
                 Chat with Summary
               </Button>
+              <Button
+                onClick={handleTranslate}
+                className="bg-blue-600 text-white hover:bg-blue-700">
+                <Languages className="mr-2 h-4 w-4" />
+                Translate
+              </Button>
             </div>
           </>
         ) : (
@@ -121,19 +183,18 @@ export function SummaryPage() {
                   className="w-full" />
               </div>
               {error && <p className="text-red-500 text-sm" role="alert">{error}</p>}
-              <Button
-                type="submit"
-                className="w-full bg-purple-600 text-white hover:bg-purple-700"
-                disabled={isLoading}>
-                {isLoading ? (
-                  <>
-                    <ArrowRight className="mr-2 h-4 w-4 animate-spin" />
-                    Summarizing...
-                  </>
-                ) : (
-                  'Summarize'
-                )}
-              </Button>
+              {isLoading ? (
+                <div className="space-y-4">
+                  <WittyProgressBar progress={progress} />
+                  <p className="text-sm text-gray-500 text-center">Please wait while we work our magic...</p>
+                </div>
+              ) : (
+                <Button
+                  type="submit"
+                  className="w-full bg-purple-600 text-white hover:bg-purple-700">
+                  Summarize
+                </Button>
+              )}
             </form>
           </div>
         )}

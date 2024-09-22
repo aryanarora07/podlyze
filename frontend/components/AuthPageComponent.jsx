@@ -63,7 +63,7 @@ export function AuthPageComponent() {
     e.preventDefault()
     setLoginError('')
     try {
-      const response = await axios.post('/api/auth/login', {
+      const response = await axios.post('http://localhost:3001/api/auth/login', {
         email,
         password
       })
@@ -71,7 +71,7 @@ export function AuthPageComponent() {
         localStorage.setItem('token', response.data.token)
         localStorage.setItem('userId', response.data.userId)
         console.log("success")
-        router.push('/dashboard')
+        router.push('/summary')
       }
     } catch (error) {
       setLoginError(error.response?.data?.error || 'An error occurred during login')

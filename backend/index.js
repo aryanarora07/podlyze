@@ -13,6 +13,7 @@ const util = require('util');
 const pipelineAsync = util.promisify(pipeline);
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
+const { PassThrough } = require('stream');
 
 const app = express();
 const port = process.env.PORT || 3001;
@@ -30,14 +31,20 @@ const prisma = new PrismaClient();
 // Initialize OpenAI client
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
+let currentProgress = 0;
+
+// Add this new route to get the current progress
+app.get('/progress', (req, res) => {
+  res.json({ progress: currentProgress });
+});
 
 app.post('/summarize', async (req, res) => {
   try {
     const { url } = req.body;
+    currentProgress = 0;
 
-
-    
     // Step 1: Get MP3 URL from RapidAPI
+    currentProgress = 20;
     const options = {
       method: 'POST',
       url: 'https://youtube-to-mp315.p.rapidapi.com/download',
@@ -69,18 +76,12 @@ app.post('/summarize', async (req, res) => {
       throw new Error('Failed to get MP3 URL from RapidAPI');
     }
 
-    // setTimeout(() => {
-    //   console.log("I'm downloading from", mp3Url);
-    // }, 15000);
-    // Step 2: Download the MP3 file
+    currentProgress = 60;
     const tempFilePath = './temp1_audio.mp3';
 
     console.log("Attempting to download from:", mp3Url);
 
-    // setTimeout(() => {
-    //   console.log("loading");
-    // }, 15000);
-    // Function to download the MP3 file
+
     const downloadMP3 = async () => {
       try {
         const response = await axios({
@@ -123,6 +124,7 @@ app.post('/summarize', async (req, res) => {
     }
 
     // Step 3: Transcribe using OpenAI's Whisper
+    currentProgress = 80;
     const transcription = await openai.audio.transcriptions.create({
       file: fs.createReadStream(tempFilePath),
       model: 'whisper-1',
@@ -136,6 +138,7 @@ app.post('/summarize', async (req, res) => {
 
     // Step 5: Generate a summary using GPT-4
     const summary = await generateSummary(transcription.text);
+    currentProgress = 100;
 
     // Send the summary back to the client
     res.json({ summary, title });
@@ -143,6 +146,8 @@ app.post('/summarize', async (req, res) => {
   } catch (error) {
     console.error('Error:', error);
     res.status(500).json({ error: 'An error occurred during the summarization process.' });
+  } finally {
+    currentProgress = 0;
   }
 });
 
@@ -228,6 +233,72 @@ app.post('/api/auth/login', async (req, res) => {
   } catch (error) {
     console.error('Login error:', error);
     res.status(500).json({ error: 'An error occurred during login' });
+  }
+});
+
+app.post('/chat', async (req, res) => {
+  try {
+    const { message, summary } = req.body;
+
+    // Set headers for streaming
+    res.setHeader('Content-Type', 'text/event-stream');
+    res.setHeader('Cache-Control', 'no-cache');
+    res.setHeader('Connection', 'keep-alive');
+
+    const stream = new PassThrough();
+    res.write('data: {"start":true}\n\n');
+
+    const completion = await openai.chat.completions.create({
+      model: "gpt-4",
+      messages: [
+        { role: "system", content: "You are a helpful assistant that can answer questions about a podcast summary. Here's the summary:" + summary },
+        { role: "user", content: message }
+      ],
+      temperature: 0.7,
+      stream: true,
+    });
+
+    for await (const chunk of completion) {
+      const content = chunk.choices[0]?.delta?.content || '';
+      if (content) {
+        res.write(`data: ${JSON.stringify({ content })}\n\n`);
+      }
+    }
+
+    res.write('data: {"done":true}\n\n');
+    res.end();
+  } catch (error) {
+    console.error('Chat error:', error);
+    res.status(500).json({ error: 'An error occurred during the chat process.' });
+  }
+});
+
+// Update the translate route
+app.post('/translate', async (req, res) => {
+  try {
+    const { text, targetLanguage } = req.body;
+
+    const completion = await openai.chat.completions.create({
+      model: "gpt-4",
+      messages: [
+        {
+          role: "system",
+          content: `You are a professional translator. Translate the following text to ${targetLanguage}. Maintain the original meaning and tone as closely as possible.`
+        },
+        {
+          role: "user",
+          content: text
+        }
+      ],
+      temperature: 0.5,
+    });
+
+    const translation = completion.choices[0].message.content;
+
+    res.json({ translation });
+  } catch (error) {
+    console.error('Translation error:', error);
+    res.status(500).json({ error: 'An error occurred during translation.' });
   }
 });
 
