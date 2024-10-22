@@ -52,7 +52,7 @@ export function SummaryPage() {
             }
           })
           .catch(error => console.error('Error fetching progress:', error));
-      }, 1000);
+      }, 500); // Fetch progress every 500ms instead of 1000ms
     }
     return () => clearInterval(intervalId);
   }, [isLoading]);

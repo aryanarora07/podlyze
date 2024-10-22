@@ -1,25 +1,22 @@
 const express = require('express');
 const cors = require('cors');
-const { google } = require('googleapis');
+
 const OpenAI = require('openai');
-const ytdl = require('ytdl-core');
+
 const { PrismaClient } = require('@prisma/client');
 const fs = require('fs');
-const axios = require('axios');
-const http = require('http');
-const request = require('request');
-const { pipeline } = require('stream');
-const util = require('util');
-const pipelineAsync = util.promisify(pipeline);
+const path = require('path');
+const { PassThrough } = require('stream');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
-const { PassThrough } = require('stream');
+const { Downloader, } = require('ytdl-mp3');
+
+const { RealtimeSession } =  require('speechmatics');
+
+const session = new RealtimeSession(process.env.SM_KEY);
 
 const app = express();
 const port = process.env.PORT || 3001;
-
-// Load environment variables
-
 
 // Middleware
 app.use(cors());
@@ -33,7 +30,7 @@ const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
 let currentProgress = 0;
 
-// Add this new route to get the current progress
+// Add this new endpoint for progress updates
 app.get('/progress', (req, res) => {
   res.json({ progress: currentProgress });
 });
@@ -43,122 +40,108 @@ app.post('/summarize', async (req, res) => {
     const { url } = req.body;
     currentProgress = 0;
 
-    // Step 1: Get MP3 URL from RapidAPI
+    // Step 1: Download MP3 using CustomDownloader
     currentProgress = 20;
-    const options = {
-      method: 'POST',
-      url: 'https://youtube-to-mp315.p.rapidapi.com/download',
-      params: {
-        url: url,
-        format: 'mp3',
-        quality: '5'
-      },
-      headers: {
-        'x-rapidapi-key': process.env.RAPIDAPI_KEY,
-        'x-rapidapi-host': 'youtube-to-mp315.p.rapidapi.com',
-        'Content-Type': 'application/json'
-      },
-      data: {}
-    };
 
-
-    let mp3Url;
-    let title;
-    try {
-      
-      const rapidApiResponse = await axios.request(options);      
-      mp3Url = rapidApiResponse.data.downloadUrl;
-      title = rapidApiResponse.data.title;
-      console.log("I'm downloading from", mp3Url);
-      
-    } catch (error) {
-      console.error('RapidAPI Error:', error);
-      throw new Error('Failed to get MP3 URL from RapidAPI');
-    }
-
-    currentProgress = 60;
-    const tempFilePath = './temp1_audio.mp3';
-
-    console.log("Attempting to download from:", mp3Url);
-
-
-    const downloadMP3 = async () => {
-      try {
-        const response = await axios({
-          method: 'GET',
-          url: mp3Url,
-          responseType: 'stream',
-          headers: {
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36' // truncated for brevity
-          }
-        });
-
-
-        // Use pipeline to handle the stream properly
-        await pipelineAsync(response.data, fs.createWriteStream(tempFilePath));
-
-        console.log('MP3 file downloaded successfully');
-      } catch (error) {
-        console.error('Download failed:', error.message);
-        throw error;
-      }
-    };
-
-    // Retry logic
-    const maxRetries = 6;
-    let retries = 0;
-
-    while (retries < maxRetries) {
-      try {
-        await downloadMP3();
-        break; // Exit the loop if successful
-      } catch (error) {
-        retries++;
-        console.error(`Download attempt ${retries} failed:`, error.message);
-        if (retries >= maxRetries) {
-          throw new Error(`Failed to download after ${maxRetries} attempts`);
-        }
-        // Wait before next retry
-        await new Promise(resolve => setTimeout(resolve, 20000));
-      }
-    }
-
-    // Step 3: Transcribe using OpenAI's Whisper
-    currentProgress = 80;
-    const transcription = await openai.audio.transcriptions.create({
-      file: fs.createReadStream(tempFilePath),
-      model: 'whisper-1',
+    // Define the correct backend directory path
+    const backendDir = path.resolve(__dirname); // This resolves to the current directory
+    const downloader = new Downloader({
+      getTags: false, // Set this to false to skip iTunes API query
+      outputDir: backendDir,
     });
 
+    let outputFile;
+    try {
+      currentProgress = 40;
+      outputFile = await downloader.downloadSong(url);
+      console.log(`Audio downloaded successfully: ${outputFile}`);
+      currentProgress = 60;
+    } catch (error) {
+      console.error('Error downloading audio:', error);
+      throw new Error('Failed to download audio: ' + error.message);
+    }
+
+    // Step 2: Transcribe using OpenAI's Whisper
+    currentProgress = 80;
+    // const transcription = await openai.audio.transcriptions.create({
+    //   file: fs.createReadStream(outputFile),
+    //   model: 'whisper-1',
+    // });
+
+    let transcription = '';
+
+    session.addListener('RecognitionStarted', () => {
+      console.log('RecognitionStarted');
+    });
+    
+    session.addListener('Error', (error) => {
+      console.log('session error', error);
+    });
+    
+    session.addListener('AddTranscript', (message) => {
+      transcription += message.metadata.transcript + ' ';
+      console.log('AddTranscript:', message.metadata.transcript);
+    });
+    
+    session.addListener('AddPartialTranscript', (message) => {
+      console.log('AddPartialTranscript', message);
+    });
+    
+    session.addListener('EndOfTranscript', () => {
+      console.log('EndOfTranscript');
+      console.log(transcription);
+    });
+
+    // Wrap the session in a Promise
+    const transcriptionPromise = new Promise((resolve, reject) => {
+      session.start().then(() => {
+        const fileStream = fs.createReadStream(outputFile);
+        
+        fileStream.on('data', (sample) => {
+          console.log('sending audio', sample.length);
+          session.sendAudio(sample);
+        });
+        
+        fileStream.on('end', () => {
+          session.stop();
+        });
+      });
+
+      session.addListener('EndOfTranscript', () => {
+        resolve(transcription);
+      });
+
+      session.addListener('Error', (error) => {
+        reject(error);
+      });
+    });
+
+    // Wait for transcription to complete
+    transcription = await transcriptionPromise;
+
     // Clean up the temporary file
-    fs.unlinkSync(tempFilePath);
+    fs.unlinkSync(outputFile);
 
-    // Step 4: Correct the transcription using GPT-4
-    // const correctedTranscript = await generateCorrectedTranscript(0, systemPrompt, transcription.text);
-
-    // Step 5: Generate a summary using GPT-4
-    const summary = await generateSummary(transcription.text);
+    // Step 3: Generate a summary using GPT-4
+    const summary = await generateSummary(transcription);
     currentProgress = 100;
 
     // Send the summary back to the client
-    res.json({ summary, title });
+    res.json({ summary, title: 'Video Summary' });
 
   } catch (error) {
     console.error('Error:', error);
-    res.status(500).json({ error: 'An error occurred during the summarization process.' });
+    res.status(500).json({ error: 'An error occurred during the summarization process: ' + error.message });
   } finally {
     currentProgress = 0;
   }
 });
 
-
-
-// New function to generate summary
-async function generateSummary(correctedTranscript) {
-  const summaryPrompt = "You are a video summarizer. Given the following transcript of a video, provide a concise summary of the main points and key information. Also expand a little bit on the summary:";
+async function generateSummary(transcription) {
+  const summaryPrompt = "You are a video summarizer. Given the following transcript of a video, provide a long form summary of the text.";
   
   const completion = await openai.chat.completions.create({
-    model: "gpt-4o",
+    model: "gpt-4o-mini",
     temperature: 0.5,
     messages: [
       {
@@ -167,14 +150,12 @@ async function generateSummary(correctedTranscript) {
       },
       {
         role: "user",
-        content: correctedTranscript
+        content: transcription
       }
     ]
   });
   return completion.choices[0].message.content;
 }
-
-
 
 // Signup route
 app.post('/api/auth/signup', async (req, res) => {
@@ -249,7 +230,7 @@ app.post('/chat', async (req, res) => {
     res.write('data: {"start":true}\n\n');
 
     const completion = await openai.chat.completions.create({
-      model: "gpt-4",
+      model: "gpt-4o-mini",
       messages: [
         { role: "system", content: "You are a helpful assistant that can answer questions about a podcast summary. Here's the summary:" + summary },
         { role: "user", content: message }
@@ -273,7 +254,6 @@ app.post('/chat', async (req, res) => {
   }
 });
 
-// Update the translate route
 app.post('/translate', async (req, res) => {
   try {
     const { text, targetLanguage } = req.body;

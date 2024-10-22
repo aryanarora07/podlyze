@@ -1,5 +1,10 @@
-import { AuthPageComponent } from '@/components/AuthPageComponent'
+import { Suspense } from 'react';
+import { AuthPageComponent } from '@/components/AuthPageComponent';
 
 export default function Auth() {
-  return <AuthPageComponent />
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <AuthPageComponent />
+    </Suspense>
+  );
 }
