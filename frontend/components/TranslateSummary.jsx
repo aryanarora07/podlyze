@@ -30,7 +30,7 @@ export function TranslateSummary() {
 
     setIsLoading(true)
     try {
-      const response = await fetch('http://localhost:3001/translate', {
+      const response = await fetch('https://podlyze.onrender.com/translate', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

@@ -22,7 +22,7 @@ export function PodcastSummarizerLanding() {
     setError('')
 
     try {
-      const response = await axios.post('http://localhost:3001/summarize', { url })
+      const response = await axios.post('https://podlyze.onrender.com/summarize', { url })
       router.push(`/summary?title=${encodeURIComponent(response.data.title)}&summary=${encodeURIComponent(response.data.summary)}`)
     } catch (err) {
       setError('An error occurred while summarizing the podcast. Please try again.')

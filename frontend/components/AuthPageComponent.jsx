@@ -43,7 +43,7 @@ export function AuthPageComponent() {
     e.preventDefault()
     setSignupError('')
     try {
-      const response = await axios.post('http://localhost:3001/api/auth/signup', {
+      const response = await axios.post('https://podlyze.onrender.com/api/auth/signup', {
         name,
         email,
         password
@@ -63,7 +63,7 @@ export function AuthPageComponent() {
     e.preventDefault()
     setLoginError('')
     try {
-      const response = await axios.post('http://localhost:3001/api/auth/login', {
+      const response = await axios.post('https://podlyze.onrender.com/auth/login', {
         email,
         password
       })

@@ -43,7 +43,7 @@ export function SummaryPage() {
     let intervalId;
     if (isLoading) {
       intervalId = setInterval(() => {
-        fetch('http://localhost:3001/progress')
+        fetch('https://podlyze.onrender.com/progress')
           .then(response => response.json())
           .then(data => {
             setProgress(data.progress);
@@ -64,7 +64,7 @@ export function SummaryPage() {
     setProgress(0)
 
     try {
-      const response = await fetch('http://localhost:3001/summarize', {
+      const response = await fetch('https://podlyze.onrender.com/summarize', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
