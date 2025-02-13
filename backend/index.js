@@ -71,7 +71,7 @@ app.post('/summarize', async (req, res) => {
     let transcription = '';
 
     session.addListener('RecognitionStarted', () => {
-      console.log('RecognitionStarted');
+      // console.log('RecognitionStarted');
     });
     
     session.addListener('Error', (error) => {
@@ -80,16 +80,16 @@ app.post('/summarize', async (req, res) => {
     
     session.addListener('AddTranscript', (message) => {
       transcription += message.metadata.transcript + ' ';
-      console.log('AddTranscript:', message.metadata.transcript);
+      // console.log('AddTranscript:', message.metadata.transcript);
     });
     
     session.addListener('AddPartialTranscript', (message) => {
-      console.log('AddPartialTranscript', message);
+      // console.log('AddPartialTranscript', message);
     });
     
     session.addListener('EndOfTranscript', () => {
-      console.log('EndOfTranscript');
-      console.log(transcription);
+      // console.log('EndOfTranscript');
+      // console.log(transcription);
     });
 
     // Wrap the session in a Promise
@@ -98,7 +98,7 @@ app.post('/summarize', async (req, res) => {
         const fileStream = fs.createReadStream(outputFile);
         
         fileStream.on('data', (sample) => {
-          console.log('sending audio', sample.length);
+          // console.log('sending audio', sample.length);
           session.sendAudio(sample);
         });
         
